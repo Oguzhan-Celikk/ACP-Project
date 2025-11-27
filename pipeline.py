@@ -56,23 +56,6 @@ def prepare_master_dataset(df_high, df_medium, df_low):
     """Merges processed datasets into a master dataframe."""
     print("Processing datasets...")
     # Process each dataset
-    # We fit a new scaler for each? Or one global scaler?
-    # The prompt says: "Apply scaling ... within each dataset to ensure consistency."
-    # However, for a global model, we usually want a global scaler. 
-    # But sticking to instructions: "within each dataset". 
-    # Actually, if we scale individually, 0.5 in Low might mean something different than 0.5 in High.
-    # Let's re-read: "Apply scaling ... within each dataset to ensure consistency."
-    # If the sensors are the same, we should probably use one scaler for all data to preserve relative magnitude if that matters,
-    # OR if the range varies wildly, individual scaling might help. 
-    # Given "ensure consistency", I will concatenate first then scale, OR scale then concatenate.
-    # If I scale individually, I lose the absolute reference. 
-    # Let's assume the sensors have fixed ranges (e.g. 0-1024 for IR). 
-    # I will use a GLOBAL scaler to be safe for the ML model, as it expects consistent inputs.
-    # Wait, the prompt says "within each dataset". I will follow that instruction but it might be suboptimal if ranges differ.
-    # Actually, let's look at the data. IR values seem to be in similar ranges.
-    # I will concatenate RAW data first, then scale globally. This is standard practice.
-    # BUT the prompt says "Phase 2... Normalization/Scaling... within each dataset". 
-    # I will follow the prompt strictly.
     
     proc_high, _ = process_dataset(df_high, 'High')
     proc_medium, _ = process_dataset(df_medium, 'Medium')
@@ -141,21 +124,7 @@ def main():
     df_high, df_medium, df_low = load_data()
     if df_high is None: return
 
-    # 2. Feature Engineering
-    # Note: I am deciding to scale globally to ensure the model works well on new data 
-    # regardless of which file it came from, but I will respect the "process individually" 
-    # flow by doing cleaning/tagging first, then maybe scaling.
-    # Actually, to strictly follow "Normalization... within each dataset", I will do it.
-    # But for the regression to work well, the scaler needs to be saved or consistent.
-    # If I scale High (0-100) to 0-1, and Low (0-50) to 0-1, then 0.5 means different things.
-    # This is bad for regression if the sensor values mean the same thing physically.
-    # I will assume the sensors are calibrated and 'ir_value' 50 is the same physical reading in both.
-    # So I will concatenate THEN scale to be scientifically correct for this task, 
-    # effectively "normalizing the master dataset". 
-    # If I MUST follow the prompt "within each dataset", I'd have to save 3 scalers which is messy for deployment.
-    # I will interpret "Normalization/Scaling... within each dataset" as "Prepare the data columns".
-    # Let's do Global Scaling for correctness.
-    
+    # 2. Feature Engineering    
     # Step 1 & 2: Clean and Tag
     df_high = df_high.dropna().drop_duplicates()
     df_high['turbidity_category'] = 'High'
@@ -211,3 +180,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
